@@ -37,14 +37,15 @@ Yolo:Bit + DHT20 + LCD + Fan + Pump + RGB LED
            - Alert panel & event history
 ```
 
-For the prototype, the frontend subscribes directly to Adafruit IO via MQTT for live data, while the backend handles persistence and command relay. This will later be refactored so the frontend gets all data through the backend.
+**Notes:** For the prototype, the frontend subscribes directly to Adafruit IO via MQTT for live data, while the backend handles persistence and command relay. This will later be refactored so the frontend gets all data through the backend.
 
 ## Repository Structure
 
 ```
 smart-fire-system/
   api/                  Backend server (FastAPI + PostgreSQL)
-  web-client/           Frontend dashboard (to be built)
+  web-client/           Frontend dashboard (React + Vite)
+  references/           Design system, reference HTML pages, project notes
 ```
 
 ## Backend (`api/`)
@@ -103,6 +104,78 @@ For more details, see interactive docs at `http://localhost:8000/docs` (Swagger 
 | `cmd/fan-pump`                   | `sfs-mqtt.cmd-slash-fan-pump`                   | Cloud -> Gateway |
 | `cmd/test-run`                   | `sfs-mqtt.cmd-slash-test-run`                   | Cloud -> Gateway |
 
+## Frontend (`web-client/`)
+
+### Tech Stack
+
+- React 19 + TypeScript
+- Vite (build tool) + TailwindCSS v4
+- TanStack Query (server state & caching)
+- Recharts (data visualization)
+- React Router (client-side routing)
+- MQTT.js (direct Adafruit IO WebSocket connection for live data)
+
+### Setup
+
+```bash
+cd web-client
+cp .env.example .env   # fill in API URL and Adafruit IO credentials
+npm install
+npm run dev            # starts on http://localhost:5173
+```
+
+### Pages
+
+| Route        | Page            | Description                                                     |
+| ------------ | --------------- | --------------------------------------------------------------- |
+| `/`          | Dashboard       | Live temp/humidity cards, AI camera feed, system activity log   |
+| `/analytics` | Analytics       | Historical temperature chart, humidity drift, stat bento grid   |
+| `/controls`  | Manual Controls | Fan/pump toggle switches, fire drill trigger, actuator status   |
+| `/alerts`    | Alert Logs      | Filterable, paginated table of alerts and AI detection events   |
+| `/ai`        | AI Monitoring   | Live AI view with bounding-box overlays, confidence meters, log |
+
+### Data Architecture
+
+- **Live data**: The frontend connects directly to Adafruit IO via MQTT WebSocket (`MqttLiveProvider`) to stream sensor readings, AI detections, alert levels, and device status in real time. This is wrapped in a React Context so the provider can be swapped later (e.g. to a backend WebSocket).
+- **Historical data**: TanStack Query hooks fetch from the FastAPI backend REST API for charts, tables, and audit trails.
+- **Commands**: POST requests to the backend, which logs and relays them to Adafruit IO via MQTT.
+
+### Frontend File Structure
+
+```
+web-client/src/
+  main.tsx                          Entry point
+  App.tsx                           Router, QueryClient, providers
+  index.css                         Tailwind imports, design tokens
+  lib/
+    constants.ts                    API URL, MQTT config, thresholds
+    utils.ts                        Formatting helpers, cn()
+  providers/
+    types.ts                        LiveData interfaces
+    live-data-context.ts            React Context definition
+    mqtt-live-provider.tsx          MQTT adapter (Adafruit IO)
+  api/
+    client.ts                       fetch wrapper, query builder
+    sensors.ts, ai.ts, alerts.ts    REST API modules
+    commands.ts, state.ts
+  hooks/
+    use-sensors.ts, use-alerts.ts   TanStack Query hooks
+    use-ai-detections.ts
+    use-commands.ts, use-system-state.ts
+  components/
+    shared/
+      material-icon.tsx             Google Material Symbols wrapper
+      page-header.tsx               Shared page header component
+    layout/
+      app-layout.tsx                Shell (sidebar + topbar + outlet)
+      sidebar.tsx, top-bar.tsx
+      bottom-nav.tsx                Mobile navigation
+  pages/
+    dashboard.tsx, analytics.tsx
+    manual-controls.tsx
+    alert-logs.tsx, ai-monitoring.tsx
+```
+
 ## Progress
 
 | Component                  | Status                                                              |
@@ -112,4 +185,5 @@ For more details, see interactive docs at `http://localhost:8000/docs` (Swagger 
 | IoT Gateway                | ~90% (missing: command forwarding to MCU, smarter alert evaluation) |
 | Adafruit IO feeds          | Done                                                                |
 | Backend API + Database     | Done                                                                |
-| Frontend Dashboard         | Not started                                                         |
+| Basic Frontend Dashboard   | Done                                                                |
+| Live AI Camera (Frontend)  | Not started                                                         |
