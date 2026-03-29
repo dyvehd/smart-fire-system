@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLiveData } from "@/providers/live-data-context";
 import { useAlerts } from "@/hooks/use-alerts";
@@ -14,20 +13,6 @@ import { TEMP_WARNING_THRESHOLD } from "@/lib/constants";
 
 const CAMERA_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDRsTMkaZJh_o69cXJNU2H3qbVrJtkPheVzkDz4dx3QbG4S7rcCS273DREMRqWW_doZMGulkGaCLv_g-_I2EAD-zFR7tnfPc0MeSdq7Bh4UrJnpt8lvJ8J-qlDXQSDqxovqKattLN3lnhwCGns_70LZqN8lzSiyjRlq_bENKzQVKBwJvutwxC3sFd8QCze2kvN4h4Fel0mbhBERo0Cc1PJFwQGb1YP8_7L_aH1fS_XzgTCvjtOO_Zx8jvUfLGEbCE622m3sYg0G2tE7";
-
-function useLocalClock() {
-  const [time, setTime] = useState(new Date());
-  useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return time.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-}
 
 function alertIcon(reason: string) {
   switch (reason) {
@@ -45,7 +30,6 @@ function alertIcon(reason: string) {
 export default function DashboardPage() {
   const { sensor, ai, alert, deviceStatus } = useLiveData();
   const { data: recentAlerts } = useAlerts({ limit: 5 });
-  const clock = useLocalClock();
 
   const isWarning = alert?.alertLevel === "WARNING";
   const isAlarm = alert?.alertLevel === "ALARM";
@@ -79,16 +63,6 @@ export default function DashboardPage() {
         description={subtitle}
         titleClassName={isAlarm ? "text-error" : undefined}
       />
-
-      {/* Local Time */}
-      <div className="flex justify-end -mt-6 mb-6">
-        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col items-center justify-center min-w-[140px] shadow-sm">
-          <span className="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest mb-1">
-            Local Time
-          </span>
-          <span className="text-2xl font-bold tracking-tight">{clock}</span>
-        </div>
-      </div>
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
